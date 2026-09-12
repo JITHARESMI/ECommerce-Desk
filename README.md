@@ -1,182 +1,216 @@
 # Commerce Desk
-E-commerce admin and order management with Laravel 12, React 19, TypeScript and MySQL.
 
-A portfolio application for managing a small store: a protected workspace, catalogue, stock ledger, customers, transactional orders, simulated payments and a reviewed AI product-description workflow.
+### E-Commerce Admin & Order Management System
 
-## Included
-- Administrator sign-in/logout: password hashing, session rotation, HttpOnly cookies, CSRF protection and throttling. Create administrators through the CLI; no public registration.
-- Products: create/edit, unique SKU, categories, price, verified facts, descriptions and archive/unarchive.
-- Categories: create/edit/delete; categories containing products cannot be deleted.
-- Inventory: signed adjustments with reasons, available stock, low-stock thresholds and movement history.
-- Customers: create/edit name, email, phone and address. Orders preserve customer name/email snapshots.
-- Orders: multiple items, server-calculated totals in integer cents, row locks, stock reservations and request-key deduplication.
-- Payment simulation: success, failure and pre-fulfilment refunds. No payment gateway or card data.
-- Dashboard: saved-data totals, recent orders, low-stock list and order counts.
-- REST API plus a session-authenticated workspace aggregation endpoint.
-- Description assistant: explicit template mode or OpenAI structured output, consent before external calls, human review and token usage records. Drafts never overwrite products automatically.
+Commerce Desk is a full-stack portfolio project for managing an online store’s operations: products, categories, inventory, customers, orders and simulated payments. It also includes an AI-assisted product-description workflow with human review before saving.
 
-## Validation status
-- React/TypeScript production build: passed.
-- Frontend currency tests: 2 passed.
-- Laravel feature tests: included, NOT executed here because PHP/Composer/MySQL are unavailable. Environment permissions blocked PHP installation.
-- Live OpenAI call, Docker build and browser/end-to-end tests: NOT executed.
-- Composer lock: not generated here. The first composer install resolves compatible dependencies. Commit backend/composer.lock after successful testing.
-- This is source code with validation still required on your machine, not a claim of production certification.
+Built with **Laravel 12, React 19, TypeScript and MySQL**.
 
-## Windows / XAMPP setup
-Extract into a NEW folder: C:\xampp\htdocs\commerce-desk
+> This project is the administrative side of e-commerce. It does not include a customer-facing storefront, shopping cart or customer checkout. All payments are simulated; no real money is processed.
 
-Requirements: PHP 8.2+, Composer, MySQL/MariaDB from XAMPP. Node.js 22 is recommended for development. A built frontend is included in backend/public in this download, so viewing it does not require Node.
+## Features
 
-1. Start MySQL in XAMPP. Start Apache too if using phpMyAdmin. Create the database commerce_desk.
-2. Check command-line PHP:
-~~~cmd
-php -v
-php --ini
-~~~
-If needed, add C:\xampp\php to PATH. Enable zip, mbstring, pdo_mysql, openssl and curl in php.ini as needed; tests also require XML/DOM and pdo_sqlite. Do not append Linux commands such as || true.
+| Module | Functionality |
+| --- | --- |
+| Admin access | Sign in and out, hashed passwords, session authentication, CSRF protection and rate limiting |
+| Products | Create and edit products, manage SKUs and prices, archive products and maintain descriptions |
+| Categories | Create, edit and delete unused categories |
+| Inventory | Adjust stock with a reason, view movement history and identify low-stock products |
+| Customers | Create and update customer contact records |
+| Orders | Create multi-item orders, reserve stock and manage order status |
+| Payment simulation | Simulate successful or failed payments and pre-fulfilment refunds |
+| Dashboard | View saved-data sales totals, order counts, recent orders and low-stock alerts |
+| REST API | Authenticated endpoints for catalogue, customer and order operations |
+| Description assistant | Generate a template or AI draft, review it and explicitly save approved content |
 
-3. Install:
-~~~cmd
+## Engineering highlights
+
+- **Server-controlled pricing:** order totals are calculated from database prices using integer cents.
+- **Transactional inventory:** order creation checks available stock and reserves it within a database transaction, using row locks.
+- **Retry handling:** request keys prevent the same order or simulated payment from being recorded twice during normal retries.
+- **Order history:** product names, SKUs and prices are saved with order items; customer names and emails are also captured at order creation.
+- **Controlled transitions:** unpaid orders cannot be fulfilled. Pending cancellations and pre-fulfilment refunds release reserved stock.
+- **Reviewed AI output:** structured descriptions are validated by the backend and returned as drafts, without automatically changing product content.
+
+## Technology
+
+| Layer | Stack |
+| --- | --- |
+| Backend | PHP 8.2+, Laravel 12 |
+| Frontend | React 19, TypeScript, Vite |
+| Database | MySQL; SQLite for automated backend tests |
+| AI | Optional OpenAI integration with structured JSON output |
+| Testing | PHPUnit and Vitest |
+| Tooling | Docker configuration and GitHub Actions |
+
+## Run locally
+
+The instructions below use **Windows and XAMPP**. Docker is not required.
+
+### 1. Requirements
+
+- PHP 8.2 or newer, with the required Laravel extensions
+- Composer
+- MySQL/MariaDB running through XAMPP
+- Node.js 22 and npm for building or developing the frontend
+
+Extract or clone the project into `C:\xampp\htdocs\commerce-desk`. Start MySQL and create a database named `commerce_desk`. Start Apache if you use phpMyAdmin to create it.
+
+### 2. Configure the backend
+
+```cmd
 cd C:\xampp\htdocs\commerce-desk\backend
 if not exist .env copy .env.example .env
 composer install --prefer-dist
-~~~
-4. Edit backend/.env. Defaults use local MySQL, database commerce_desk, root and a blank password. Update to your actual credentials. Keep APP_NAME="Commerce Desk" quoted.
-5. Generate the key ONCE for a new installation, migrate and create your administrator:
-~~~cmd
+```
+
+Edit `backend/.env` to match your database credentials:
+
+```dotenv
+APP_NAME="Commerce Desk"
+APP_URL=http://127.0.0.1:8080
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=commerce_desk
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Generate the application key once for a new installation, create the tables and add an administrator:
+
+```cmd
 php artisan key:generate
 php artisan config:clear
 php artisan migrate
 php artisan db:seed
 php artisan admin:create your-email@example.com
-~~~
-The administrator command asks for a name and password of at least 12 characters. No default password is shipped. The optional seeder creates sample products/customers, never administrators or orders, and preserves existing sample stock on reruns.
+```
 
-6. Start:
-~~~cmd
+The administrator command asks for your name and a password of at least 12 characters. There is no default administrator password. Seeding is optional and adds fictional products and customers.
+
+### 3. Start the application
+
+Start Laravel and leave its terminal open:
+
+```cmd
 php artisan serve --host=127.0.0.1 --port=8080
-~~~
-Open http://127.0.0.1:8080 and sign in. Keep the terminal open. The download includes a built React interface.
+```
 
-### Frontend development
 In a second terminal:
-~~~cmd
+
+```cmd
 cd C:\xampp\htdocs\commerce-desk\frontend
 npm ci
 npm run dev
-~~~
-Open http://127.0.0.1:5173. Vite proxies /api to Laravel on port 8080. Use the same hostname consistently.
-Optional scripts/setup-windows.cmd installs dependencies and builds; start-backend.cmd and start-frontend.cmd launch servers. Database creation, migrations and administrator creation remain explicit.
+```
 
-After editing, rebuild the single-server interface:
-~~~cmd
-cd C:\xampp\htdocs\commerce-desk\frontend
+Open **http://127.0.0.1:5173** and sign in with your administrator account. Vite forwards API requests to Laravel on port 8080.
+
+For a single-server setup, build and copy the frontend into Laravel’s public directory:
+
+```cmd
 npm run build
 xcopy dist\* ..\backend\public\ /E /I /Y
-~~~
-This adds index.html, assets and favicon.svg without replacing Laravel's index.php.
+```
 
-## Try the workflow
-1. Sign in. The sample catalogue has four products and zero orders.
-2. Add a category and product; new products start with zero stock.
-3. Add stock with a reason in Inventory. Check its history.
-4. Add a customer and create an order with two different products.
-5. Confirm the total and reduced available stock; refresh to check persistence.
-6. Simulate failure: order stays pending, stock remains reserved. Simulate success: order becomes paid.
-7. Fulfil the paid order, or refund it before fulfilment. Cancellation/refund releases stock once.
-8. Edit a product, generate a draft, review it, choose Use this draft, then Save changes.
-9. Sign out and confirm private API requests require authentication.
+Then open **http://127.0.0.1:8080** while Laravel is running. The downloadable project archive already includes a built frontend; a fresh Git clone may require this build step.
 
-Business rules: AUD only; no separate taxes, shipping or discounts. Stock reservations do not expire; cancel abandoned pending orders. Fulfilled returns/refunds are outside this version. Archive products instead of deleting order history. Customers are editable but not deleted through the UI. Every authenticated account is an administrator.
+## Try the order workflow
 
-## AI descriptions
-Default AI_PROVIDER=template copies verified facts into a clearly labelled template; no model is called.
+1. Create a category and product.
+2. Add opening stock in **Inventory**, recording a reason.
+3. Create a customer and an order containing one or more products.
+4. Check the calculated total and reduced available stock.
+5. Simulate a failed payment, then a successful payment.
+6. Fulfil the paid order or simulate a refund before fulfilment.
+7. Refresh the page to confirm the records persist.
 
-For live generation set backend/.env:
-~~~dotenv
+## AI product-description generator
+
+The default mode is `AI_PROVIDER=template`. It creates a clearly labelled template from supplied facts without calling an AI model.
+
+To enable OpenAI, update `backend/.env`:
+
+```dotenv
 AI_PROVIDER=openai
-OPENAI_API_KEY=your-private-key
+OPENAI_API_KEY=your-private-api-key
 OPENAI_MODEL=gpt-4o-mini
-~~~
-Run php artisan config:clear and restart Laravel. The model must support Chat Completions structured outputs in your API project. API access, available billing credits and internet access are required.
+```
 
-Only product name/facts are sent, after confirmation. Do not put customer information or secrets in them. The prompt prohibits invented claims, but human review remains necessary. The backend validates the description, records returned token counts in ai_runs, and reports failures without silently falling back. Token cost estimates are not included because pricing is not configured. API keys remain server-side.
-Reference: https://developers.openai.com/api/docs/guides/structured-outputs
+Run `php artisan config:clear` and restart Laravel. Your API project needs access to a model that supports the implemented structured-output request, plus available API billing credits.
 
-## REST API
-Base: /api/v1. JSON responses. Session authentication, not bearer tokens.
-GET /csrf returns a token and session cookie. Retain cookies and send X-CSRF-TOKEN for POST/PUT/DELETE. Refresh the token after login/logout.
+In the product editor, enter the product name and verified facts, generate a draft, review its claims and choose **Use this draft**. Save the product separately to apply the description.
 
-| Endpoint | Purpose |
-| --- | --- |
-| POST /login, GET /me, POST /logout | Authentication |
-| GET /health | Public health check |
-| GET /data | Admin workspace data |
-| GET/POST /products, PUT /products/{id} | Product catalogue |
-| POST /products/{id}/stock | delta and reason |
-| GET/POST /categories, PUT/DELETE /categories/{id} | Categories |
-| GET/POST /customers, PUT /customers/{id} | Customers |
-| GET/POST /orders, GET /orders/{id} | Orders |
-| POST /orders/{id}/payment | request_key UUID and outcome success/failed |
-| POST /orders/{id}/fulfill, /cancel, /refund | Order transitions |
-| GET /payments | Simulation ledger |
-| POST /ai/description | name, facts, confirm_external |
+The application requests confirmation before sending product facts to OpenAI. Keys stay on the backend, and returned input/output token counts are recorded in `ai_runs`. Provider failures are shown as errors rather than silently replaced with template results. Generated content still requires human verification.
 
-Collection GET routes are paginated. /data loads the small-store catalogue/customers/orders and latest 100 movements/payments. Large datasets need server-side UI pagination.
+## API overview
 
-Order body:
-~~~json
-{"request_key":"59c477f9-3912-4ce9-b4dc-dd5f7016a663","customer_id":1,"items":[{"product_id":1,"quantity":2}]}
-~~~
-Reuse a request key for the SAME request after a network failure; use a new key for a new order. Duplicate product lines are rejected. Client prices/totals are ignored. Validation: 422. Unauthenticated: 401. CSRF failure: 419.
+Base path: `/api/v1`.
 
-## Tests and GitHub Actions
-~~~cmd
+The API uses session cookies and CSRF protection. Obtain a token from `GET /csrf`, retain the session cookie and send `X-CSRF-TOKEN` with modifying requests. Refresh the token after authentication changes.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/login`, `/logout` | Authentication |
+| GET | `/me` | Current administrator |
+| GET | `/health` | Public health check |
+| GET | `/data` | Admin workspace data |
+| GET / POST | `/products` | List or create products |
+| PUT | `/products/{id}` | Update a product |
+| POST | `/products/{id}/stock` | Adjust stock |
+| GET / POST | `/categories` | List or create categories |
+| PUT / DELETE | `/categories/{id}` | Update or remove a category |
+| GET / POST | `/customers` | List or create customers |
+| PUT | `/customers/{id}` | Update a customer |
+| GET / POST | `/orders` | List or create orders |
+| GET | `/orders/{id}` | Order details |
+| POST | `/orders/{id}/payment` | Simulate a payment |
+| POST | `/orders/{id}/fulfill`, `/cancel`, `/refund` | Change order state; each action uses the `/orders/{id}` prefix |
+| GET | `/payments` | Simulated payment history |
+| POST | `/ai/description` | Generate a description draft |
+
+For order creation, send a UUID `request_key`, a `customer_id` and an `items` array containing `product_id` and `quantity`. Reuse the same key only when retrying the same request. Prices and totals supplied by a client are not trusted.
+
+## Testing
+
+Backend:
+
+```cmd
 cd backend
 php artisan test
-cd ..\frontend
+```
+
+Frontend:
+
+```cmd
+cd frontend
 npm test
 npm run build
-~~~
-Backend tests use in-memory SQLite and cover authentication, server totals, stock rollback, request deduplication, refund restoration, transitions and mocked AI. Laravel bypasses CSRF middleware in these framework tests: verify CSRF manually before deployment. Concurrent row-lock behaviour needs MySQL integration testing; SQLite tests cannot establish it.
-CI runs both suites. No passing CI badge is claimed.
+```
 
-## Docker (optional)
-Only use if Docker Desktop is installed and running. Copy docker.env.example to root .env and set a strong DB_PASSWORD. Generate an APP_KEY:
-~~~cmd
-docker run --rm php:8.2-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
-~~~
-Copy the output into APP_KEY in root .env (separate from backend/.env used by XAMPP).
-~~~cmd
-docker compose up --build -d
-docker compose exec app php artisan migrate --force
-docker compose exec app php artisan db:seed --force
-docker compose exec app php artisan admin:create your-email@example.com
-~~~
-Open http://127.0.0.1:8080. MySQL uses a named volume. Do not run docker compose down -v unless you intend to delete the database. Container recreation logs administrators out because file sessions are ephemeral.
+The included backend suite covers authentication, totals, stock rollback, retries, payment transitions, refunds and mocked AI responses. GitHub Actions is configured to run both suites.
 
-## Deployment
-Serve ONLY backend/public through PHP 8.2+ Apache/Nginx. Build the frontend there. Make storage and bootstrap/cache writable. Keep .env outside the web root. Configure HTTPS, APP_ENV=production, APP_DEBUG=false, SESSION_SECURE_COOKIE=true and the real APP_URL. Use a dedicated database account and backups.
-The Docker example binds to loopback for local use. Before public deployment run backend/MySQL tests, verify authentication/CSRF, lock dependencies, and configure monitoring/backups. No remote infrastructure or deployment is created.
+**Recorded validation:** the frontend production build and two frontend currency tests passed during preparation. Backend tests, MySQL concurrency behaviour, Docker, browser workflows and live OpenAI requests have not yet been verified. SQLite tests alone cannot establish MySQL row-lock behaviour. No passing CI status is claimed.
 
-## GitHub
-From the project root:
-~~~cmd
-git init
-git add .
-git status
-git commit -m "Build Commerce Desk admin and order management"
-git branch -M main
-git remote add origin YOUR_ACTUAL_REPOSITORY_URL
-git push -u origin main
-~~~
-Replace the URL before running. Review staged files: never include .env or private data. If origin exists, use git remote set-url origin YOUR_ACTUAL_REPOSITORY_URL. Commit composer.lock after resolving/testing dependencies. Fresh Git clones need a frontend build before using the single-server URL.
+## Scope and limitations
 
-## Architecture
-React → session/CSRF-protected Laravel routes → controllers → OrderService transactions → MySQL.
-Product facts → AI endpoint → structured draft → human review → normal product save.
-Payments only change a simulation ledger, never a processor.
+- Admin application only; no customer storefront, customer accounts or checkout.
+- Every authenticated account is an administrator; granular staff roles are not implemented.
+- Payments are simulations. Currency is AUD, with no separate tax, discount or shipping calculation.
+- Reservations do not expire automatically; cancel abandoned pending orders to release stock.
+- Refunds after fulfilment and physical returns are outside this version.
+- The admin aggregation endpoint is intended for a small dataset; larger stores need paginated UI queries.
+- A Composer lock file was not generated during preparation. Resolve dependencies, run the backend tests and commit the resulting lock file before treating the build as reproducible.
 
-MIT licence. All sample customers and products are fictional.
+## Deployment and security
 
+Serve only `backend/public`, use HTTPS, and keep `.env` outside the web root. Configure `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true` and the correct application URL. Keep `storage` and `bootstrap/cache` writable.
+
+An optional Docker configuration is included. Copy `docker.env.example` to the root `.env`, supply an application key and a strong database password, then build the containers. The Docker configuration binds to local loopback by default. Run migrations and create an administrator explicitly before use.
+
+Validate backend behaviour, authentication, CSRF protection and deployment configuration before public hosting. Never commit actual `.env` files, API keys, passwords or customer data. Keep `.env.example` as the setup template.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
