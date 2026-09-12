@@ -1,0 +1,10 @@
+**/node_modules
+backend/vendor
+backend/.env
+.env
+.git
+frontend/dist
+backend/storage/logs/*
+backend/storage/framework/sessions/*
+backend/bootstrap/cache/*.php
+
